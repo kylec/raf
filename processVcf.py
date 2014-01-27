@@ -8,16 +8,18 @@ import argparse
 import sys
 
 parser = argparse.ArgumentParser()
+parser.add_argument('-i', dest='input')
 parser.add_argument('-o', dest='output')
 args = parser.parse_args()
 
 def main():
-    vcfs = glob.glob('*.vc')
+    vcfs = glob.glob(args.input)
     outputFile = open(args.output, 'w')
     outputFile.write('sample\tchr\tpos\tdbsnp\trefCount\tvarCount\ttotal\n')
 
     if vcfs:
         for vcf in vcfs:
+            print 'processing %s ...' % vcf
             parseVcf(vcf, outputFile)
     else:
         raise Exception('Error: .vcf does not exist')
