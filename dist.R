@@ -1,0 +1,10 @@
+a = read.table('TCGA-F2-A44G.txt', header=TRUE, sep='\t')
+head(a)
+af=a$refCount/a$total
+summary(af)
+boxplot(af)
+par(new=T)
+boxplot(af)
+d=cbind(af,af)
+boxplot(d)
+head(d)
