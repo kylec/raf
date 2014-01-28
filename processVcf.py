@@ -15,7 +15,7 @@ args = parser.parse_args()
 def main():
     vcfs = glob.glob(args.input)
     outputFile = open(args.output, 'w')
-    outputFile.write('sample\tchr\tpos\tdbsnp\trefCount\tvarCount\ttotal\n')
+    outputFile.write('sample\tchr\tpos\tref\tvar\tdbsnp\trefCount\tvarCount\ttotal\n')
 
     if vcfs:
         for vcf in vcfs:
@@ -35,7 +35,9 @@ def parseVcf(inputFile, outputFile):
             i += 1
             chrom = re.sub('chr', '', row.CHROM)
             start = row.POS
-        
+            ref = row.REF
+            var = row.ALT[0]
+            
             # is dbsnp = 1 else 0
             dbsnp = '0' if row.ID == '.' else '1'
         
@@ -52,7 +54,7 @@ def parseVcf(inputFile, outputFile):
                 varCount = row.genotype(sample)['AD'][1]
                 depth = row.genotype(sample)['DP']
             
-                outputFile.write('\t'.join([shortSample, chrom, str(start), dbsnp, str(refCount), str(varCount), str(depth)]))
+                outputFile.write('\t'.join([shortSample, chrom, str(start), ref, str(var), dbsnp, str(refCount), str(varCount), str(depth)]))
                 outputFile.write('\n')
     except Exception:
         print 'Error: line %d in %s' % (i, inputFile)
