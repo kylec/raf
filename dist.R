@@ -3,50 +3,68 @@ setwd('~/Projects/raf')
 d = read.table('out.txt', header=T)
 head(d)
 dim(d)
-# summary of af dist
-hist(d$refCount/d$total, breaks=seq(0,1,.005))
-summary(d$refCount/d$total)
 
+# summary of af dist
+png('af-hetnum.png')
+#par(mfrow=c(2,1))
+af=d$refCount/d$total
+h=hist(af, breaks=seq(0,1,.01))
+plot(h, freq=FALSE, axes=F, main='Het sites ref allele distribution', xlab='Ref allele fraction', 
+     ylab="Fraction of total het sites")
+axis(2, pretty(h$density), pretty(h$density)/100)
+axis(1, at=seq(0,1,.1))
+s=summary(af)
+legend('topright', legend=c(paste('med=',s[3]), paste('avg=',s[4])))
+dev.off()
+max(h$counts)/sum(h$counts)
+
+dd = d[d$total>100 & d$total< 1000,]
+d=dd
 # #samples vs #sites
-#hist(log2(d$sample), breaks=seq(0,42,1))
-hist(d$sample, breaks=seq(0,42,1))
-summary(d$sample)
+png('samples-hetnum.png')
+h=hist(d$sample, breaks=seq(0,42,1))
+plot(h, freq=FALSE, yaxt='n', main='How common is a het site?', xlab='# Samples with common het sites', 
+     ylab="Fraction of total het sites")
+axis(2, pretty(h$density), pretty(h$density))
+s=summary(d$sample)
+legend('topright', legend=c(paste('med=',s[3]), paste('avg=',s[4])))
+dev.off()
+max(h$counts)/sum(h$counts)
 
 # # samples vs #af
-plot(d$sample, d$refCount/d$total)
+png('samples-af.png')
+plot(d$sample, d$refCount/d$total, main='Do common het sites have less variance in af? (100x-1000x)', 
+     xlab="# samples with common het sites", ylab="ref allele fraction")
+dev.off()
 
 # # cov vs #af
-plot(d$total, d$refCount/d$total, xlim=c(0,10000))
+png('cov-af.png')
+plot(d$total, d$refCount/d$total, main = 'depth vs af', xlab='depth', ylab='ref allele fraction',
+     xlim=c(0,10000))
+dev.off()
+summary(d$total)
+
 
 ##------------------------------------------------##
-# af distribution of each samples
-files = system('ls TCGA*.txt | head -10', intern=T)
-names = system('ls TCGA*.txt | cut -d- -f2,3 | sed \'s/.txt//\'| head -10', intern=T)
-# matrix of samples af
+# af distribution for ti and tv
+names = c('all', 'ti', 'tv')
 d=c()
-d_tr=c()
-d_tv=c()
 stats = c()
 
-for (i in 1:length(files)) {
-  a = read.table(files[i], header=TRUE, sep='\t')
-  tr = a[which( ((a$ref=='G' & a$var=='A') | (a$ref=='A' & a$var=='G') | (a$ref=='C' & a$var=='T') | (a$ref=='T' & a$var=='C')) ), ]
-  tv = a[which( (!(a$ref=='G' & a$var=='A') & !(a$ref=='A' & a$var=='G') & !(a$ref=='C' & a$var=='T') & !(a$ref=='T' & a$var=='C')) ), ]
-  head(tv)
+a=d
+tr = a[which( ((a$ref=='G' & a$var=='A') | (a$ref=='A' & a$var=='G') | (a$ref=='C' & a$var=='T') | (a$ref=='T' & a$var=='C')) ), ]
+tv = a[which( (!(a$ref=='G' & a$var=='A') & !(a$ref=='A' & a$var=='G') & !(a$ref=='C' & a$var=='T') & !(a$ref=='T' & a$var=='C')) ), ]
+head(tv)
   
-  af = sample(a$refCount/a$total, 10000)
-  af_tr = sample(tr$refCount/tr$total, 1000)
-  af_tv = sample(tv$refCount/tv$total, 1000)
-  d = cbind(d,af)
-  d_tr = cbind(d_tr, af_tr)
-  d_tv = cbind(d_tv, af_tv)
-  stats =rbind(stats, summary(af))
-}
+af = sample(a$refCount/a$total, 10000)
+af_tr = sample(tr$refCount/tr$total, 10000)
+af_tv = sample(tv$refCount/tv$total, 10000)
+d = cbind(d,af, af_tr, af_tv)
+stats =rbind(stats, summary(af), summary(af_tr), summary(af_tv))
 
 #plot
 colnames(d) = names
 boxplot(d, names=names, las=2)
-boxplot(d_tr, names=names, las=2)
-boxplot(d_tv, names=names, las=2)
+legend('topleft', paste('ti/tv=', signif(dim(tr)[1]/dim(tv)[1],digits=3)))
 stats
 
