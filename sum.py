@@ -22,7 +22,8 @@ def main():
             ref = fields[3]
             var = fields[4]
             refCount = int(fields[6])
-            depth = int(fields[8])
+            varCount = int(fields[7])
+            depth = refCount + varCount
             
             if key in sites:
                 sites[key][0] += 1
