@@ -19,7 +19,7 @@ dev.off()
 max(h$counts)/sum(h$counts)
 
 dd = d[d$total>100 & d$total< 1000,]
-d=dd
+#d=dd
 # #samples vs #sites
 png('samples-hetnum.png')
 h=hist(d$sample, breaks=seq(0,42,1))
@@ -40,10 +40,35 @@ dev.off()
 # # cov vs #af
 png('cov-af.png')
 plot(d$total, d$refCount/d$total, main = 'depth vs af', xlab='depth', ylab='ref allele fraction',
-     xlim=c(0,10000))
+     xlim=c(0,5000))
 dev.off()
 summary(d$total)
 
+# example desc stats
+library(pastecs)
+options(digits=3)
+stat.desc(d$refCount/d$total, basic=F) 
+summary(d$refCount/d$total)
+
+# expected number of reference at seq depth
+# x = # of reference allele
+x = seq(1,10000,1)
+y = dbinom(x,size=10000, prob=.5)
+plot(x, y)
+
+# plot expected vs emmperical
+d1 = d[d$total<10001,]
+plot(d1$total, d1$refCount)
+ref=d1$refCount
+ref_sim = rbinom(10000, x, .5)
+plot(d1$refCount/d1$total, d1$total, type='p',cex=.5, col='red',xlim=c(0,1))
+par(new=T)
+plot(ref_sim/x,x, type='p',cex=.5, xlim=c(0,1))
+length(ref)
+length(ref_sim)
+
+# qqplot
+qqplot(ref_sim, ref)
 
 ##------------------------------------------------##
 # af distribution for ti and tv
@@ -51,7 +76,7 @@ names = c('all', 'ti', 'tv')
 d=c()
 stats = c()
 
-a=d
+a=dd
 tr = a[which( ((a$ref=='G' & a$var=='A') | (a$ref=='A' & a$var=='G') | (a$ref=='C' & a$var=='T') | (a$ref=='T' & a$var=='C')) ), ]
 tv = a[which( (!(a$ref=='G' & a$var=='A') & !(a$ref=='A' & a$var=='G') & !(a$ref=='C' & a$var=='T') & !(a$ref=='T' & a$var=='C')) ), ]
 head(tv)
