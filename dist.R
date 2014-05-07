@@ -44,34 +44,46 @@ plot(d$total, d$refCount/d$total, main = 'depth vs af', xlab='depth', ylab='ref 
 dev.off()
 summary(d$total)
 
-# example desc stats
+#### example desc stats
 library(pastecs)
 options(digits=3)
 stat.desc(d$refCount/d$total, basic=F) 
 summary(d$refCount/d$total)
 
-# expected number of reference at seq depth
-# x = # of reference allele
-x = seq(1,10000,1)
-y = dbinom(x,size=10000, prob=.5)
-plot(x, y)
+# filter by coverage
+d = read.table('out.txt', header=T)
+e=d[which(d$total>20 & d$total< 10000),]
+d=e
+
+# sample rows in data
+prob = signif(median(d$refCount/d$total), 3)
+probs =c(prob-.2,prob-.15,prob-.1, prob-.05, prob, prob+.05, prob+.1, prob+.15, prob+.2)
 
 # plot expected vs emmperical
-d1 = d[d$total<10001,]
-plot(d1$total, d1$refCount)
-ref=d1$refCount
-ref_sim = rbinom(10000, x, .5)
-plot(d1$refCount/d1$total, d1$total, type='p',cex=.5, col='red',xlim=c(0,1))
-par(new=T)
-plot(ref_sim/x,x, type='p',cex=.5, xlim=c(0,1))
-length(ref)
-length(ref_sim)
+#for (i in 1:1) {
+for (i in 1:length(probs)) {
+  d_sample = d[sample(nrow(d), size=50000),]
+  ref_sim = rbinom(length(d_sample$total), d_sample$total, prob=probs[i])
+  png(paste("exp",i,"png",sep="."))
+  plot(d_sample$refCount/d_sample$total, d_sample$total, type='p',cex=.5, col=rgb(100,0,0,50,maxColorValue=200), pch=16,xlim=c(0,1), xlab="", ylab="")
+  par(new=T)
+  plot(ref_sim/d_sample$total, d_sample$total, type='p',cex=.5, xlim=c(0,1),  col=rgb(0,0,0,50,maxColorValue=200), pch=16, xlab = "Reference Allele Fraction", ylab = "Depth")
+  par(new=F)
+  legend("topright", c(paste("prob=",probs[i])))
+  dev.off()
+}
 
-# qqplot
+# overall median .54 , take rbinom of a depth given by a red point
+library(pastecs)
+stat.desc(d1$refCount/d1$total, basic=F)
+head(ref_sim)
+
+# rbinom( length(depth, depth, prob = .54)
+
+#### qqplot
 qqplot(ref_sim, ref)
 
-##------------------------------------------------##
-# af distribution for ti and tv
+#### af distribution for ti and tv
 names = c('all', 'ti', 'tv')
 d=c()
 stats = c()
@@ -87,9 +99,49 @@ af_tv = sample(tv$refCount/tv$total, 10000)
 d = cbind(d,af, af_tr, af_tv)
 stats =rbind(stats, summary(af), summary(af_tr), summary(af_tv))
 
-#plot
+#### plot
 colnames(d) = names
 boxplot(d, names=names, las=2)
 legend('topleft', paste('ti/tv=', signif(dim(tr)[1]/dim(tv)[1],digits=3)))
 stats
 
+#### individual sample plots
+files = system("ls TCGA*.txt", intern=T)
+for (i in 1:length(files)){
+  # plot individual af
+  a = read.table(files[i], header=T)
+  png(paste(files[i],"png", sep="."))
+  plot(a$total, a$refCount/a$total, xlab ="depth", ylab = "ref allele fraction")
+  dev.off()
+}
+
+#### sample vs sample af
+k=length(files)/2
+k=1
+for (i in 1:k) {
+  png(paste("af", i, "png", sep="."))
+  a = read.table(files[i], header=T)
+  b= read.table(files[i+1], header=T)
+  i = i + 1
+  c = merge(a, b, by=c('chr','pos'))
+  
+  #filtered
+  cc= c[which( (c$refCount.x+c$varCount.x)>20 & (c$refCount.x+c$varCount.x) < 1000 & 
+                          (c$refCount.y+c$varCount.y)>20 & (c$refCount.y+c$varCount.y) < 1000 ),]
+  #head(c_filtered)
+  cat(dim(cc)[1]/dim(c)[1])
+  depth_x = cc$refCount.x+cc$varCount.x
+  depth_y = cc$refCount.y+cc$varCount.y
+  af_x = cc$refCount.x/depth_x
+  af_y = cc$refCount.y/depth_y
+  plot(af_x,af_y, xlab=c$sample.x[1], ylab=c$sample.y[1], xlim=c(0,1) , ylim=c(0,1), col=rgb(100,0,0,50,maxColorValue=200), pch=16)
+  dev.off()
+}
+dim(c)
+dim(cc)
+c$sample.x[1]
+x = c$refCount.x/(c$refCount.x+c$varCount.x)
+y = c$refCount.y/(c$refCount.y+c$varCount.y)
+
+
+# look at the allelels deviated. and see how it looks another person
